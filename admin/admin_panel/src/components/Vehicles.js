@@ -6,10 +6,12 @@ const VehicleForm = () => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    no_of_seats: 0,
+    no_of_seats: '',
     image: null,
-    category: '',
-    per_day_price: 0,
+    category_id: '',
+    added_by: '',
+    rating: '',
+    per_day_price: '',
   });
 
   const [showForm, setShowForm] = useState(false);
@@ -24,40 +26,71 @@ const VehicleForm = () => {
 
   const handleImageChange = (e) => {
     const imageFile = e.target.files[0];
-    setFormData((prevData) => ({
-      ...prevData,
-      image: imageFile,
-    }));
+    const reader = new FileReader();
+  
+    reader.onload = (event) => {
+      setFormData((prevData) => ({
+        ...prevData,
+        image: imageFile,
+        // Add a new property for preview URL (optional)
+        previewUrl: event.target.result,
+      }));
+    };
+  
+    reader.readAsDataURL(imageFile);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+  
+    const formDataToSend = new FormData();
+
+    // Append form fields to FormData object
+    formDataToSend.append('title', formData.title);
+    formDataToSend.append('description', formData.description);
+    formDataToSend.append('no_of_seats', formData.no_of_seats);
+    formDataToSend.append('per_day_price', formData.per_day_price);
+    formDataToSend.append('added_by', formData.added_by);
+    formDataToSend.append('category_id', formData.category_id);
+    formDataToSend.append('rating', formData.rating);
+  
+    // Append image file to FormData object
+    formDataToSend.append('image', formData.image);
+  
     // Send form data to backend API for processing
-    console.log(formData);
-    // Reset form data after submission
-    setFormData({
-      title: '',
-      description: '',
-      no_of_seats: 0,
-      image: null,
-      category: '',
-      per_day_price: 0,
-    });
-    // Close the form
-    setShowForm(false);
+    try {
+      const response = await fetch('http://localhost:5000/vehicles', {
+        method: 'POST',
+        // headers: {
+        //   'Content-Type': 'application/json',
+        // },
+        body: formDataToSend,
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to add vehicle');
+      }
+  
+      const responseData = await response.json();
+      console.log('Vehicle added successfully:', responseData);
+    } catch (error) {
+      console.error('Error adding vehicle:', error);
+    }
   };
 
   return (
-    <Container maxWidth="sm">
-      <Button onClick={() => setShowForm(!showForm)} variant="contained" color="primary">
-        {showForm ? 'Close Form' : 'Add Vehicle'}
-      </Button>
+    <Container maxWidth="md">
+      <Box sx={{ mb: 2 }}>
+        <Button onClick={() => setShowForm(!showForm)} sx={{mt:3, ml: 90}} variant="contained" color="primary">
+          {showForm ? 'Close Form' : 'Add Vehicle'}
+        </Button>
+      </Box>
       {showForm && (
-        <>
-          <Typography variant="h4" gutterBottom>
+        <Box sx={{ p: 2, bgcolor: 'background.paper', borderRadius: 4 }}>
+          <Typography variant="h5" gutterBottom>
             Add New Vehicle
           </Typography>
-          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
+          <form onSubmit={handleSubmit}>
             <Grid container spacing={2}>
               <Grid item xs={12}>
                 <TextField
@@ -79,12 +112,55 @@ const VehicleForm = () => {
                   required
                 />
               </Grid>
-              <Grid item xs={12}>
+              <Grid item xs={6}>
                 <TextField
                   label="Number of Seats"
                   name="no_of_seats"
                   type="number"
                   value={formData.no_of_seats}
+                  onChange={handleInputChange}
+                  fullWidth
+                  required
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  label="Price per Day ($)"
+                  name="per_day_price"
+                  type="number"
+                  value={formData.per_day_price}
+                  onChange={handleInputChange}
+                  fullWidth
+                  required
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  label="Added By"
+                  name="added_by"
+                  value={formData.added_by}
+                  onChange={handleInputChange}
+                  fullWidth
+                  required
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  label="Category ID"
+                  name="category_id"
+                  type="number"
+                  value={formData.category_id}
+                  onChange={handleInputChange}
+                  fullWidth
+                  required
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  label="Rating"
+                  name="rating"
+                  type="number"
+                  value={formData.rating}
                   onChange={handleInputChange}
                   fullWidth
                   required
@@ -104,8 +180,8 @@ const VehicleForm = () => {
                 </Button>
               </Grid>
             </Grid>
-          </Box>
-        </>
+          </form>
+        </Box>
       )}
       <VehicleList />
     </Container>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import VehicleTable from './VehicleTable';
 
 const VehicleList = () => {
+  const API_URL = 'http://localhost:5000/vehicles';
   const [vehicles, setVehicles] = useState([]);
 
   useEffect(() => {
@@ -9,7 +10,7 @@ const VehicleList = () => {
   }, []);
 
   const fetchVehicles = () => {
-    fetch('http://localhost:5000/vehicles')
+    fetch(API_URL)
       .then(response => {
         if (!response.ok) {
           throw new Error('Network response was not ok');
@@ -24,22 +25,41 @@ const VehicleList = () => {
       });
   };
 
-  const handleDelete = async (vehicleId) => {
+  const handleDelete = (vehicleId) => {
+    fetch(`${API_URL}/${vehicleId}`, {
+      method: 'DELETE'
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Failed to delete vehicle');
+      }
+      fetchVehicles(); // Fetch updated list of vehicles after deletion
+    })
+    .catch(error => {
+      console.error('Error deleting vehicle: ', error);
+    });
+  };
+
+  const handleUpdate = async (updatedVehicle) => {
     try {
-      await fetch(`/vehicles/${vehicleId}`, {
-        method: 'DELETE'
+      await fetch(`http://localhost:5000/vehicles/${updatedVehicle.vehicle_id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedVehicle),
       });
-      // After successful deletion, fetch updated list of vehicles
+      // After successful update, fetch updated list of vehicles
       fetchVehicles();
     } catch (error) {
-      console.error('Error deleting vehicle: ', error);
+      console.error('Error updating vehicle: ', error);
     }
   };
 
   return (
-    <div>
-      <h2>Vehicle List</h2>
-      <VehicleTable vehicles={vehicles} onDelete={handleDelete} />
+    <div style={{ margin: '20px' }}>
+      <h2 style={{fontSize: '30px', }}> Vehicle List</h2>
+      <VehicleTable vehicles={vehicles} onDelete={handleDelete} onUpdate={handleUpdate} />
     </div>
   );
 };
